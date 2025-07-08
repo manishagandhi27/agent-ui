@@ -1,6 +1,6 @@
 import clsx from "clsx";
 
-export function ProgressBubble({ content }: { content?: string }) {
+export function ProgressBubble({ content, agentName }: { content?: string; agentName?: string }) {
   return (
     <div className={clsx(
       "flex items-start gap-2",
