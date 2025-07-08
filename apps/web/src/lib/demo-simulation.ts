@@ -469,7 +469,7 @@ export function simulateWorkflowEvents(
     const [stageId, stageData] = stages[currentStageIndex];
     
     // Simulate progress events (0% to 100%)
-    for (let progress = 0; progress <= 100; progress += 25) {
+    for (let progress = 0; progress <= 100; progress += 20) {
       setTimeout(() => {
         // Progress event
         const progressEvent = {
@@ -494,25 +494,26 @@ export function simulateWorkflowEvents(
                 agent_name: stageData.agent,
                 content: `${stageData.name} stage completed successfully`,
                 stage_data: {
-                  stories: stageData.stories,
-                  designContent: stageData.designContent,
-                  codeFiles: stageData.codeFiles,
-                  testCases: stageData.testCases
+                  stories: 'stories' in stageData ? stageData.stories : undefined,
+                  designContent: 'designContent' in stageData ? stageData.designContent : undefined,
+                  codeFiles: 'codeFiles' in stageData ? stageData.codeFiles : undefined,
+                  testCases: 'testCases' in stageData ? stageData.testCases : undefined
                 }
               }
             };
             
             onEvent(contentEvent);
-          }, 1000);
+            
+            // Move to next stage after content is ready
+            currentStageIndex++;
+            if (currentStageIndex < stages.length) {
+              setTimeout(simulateStage, 2000); // 2 second delay between stages
+            } else {
+              setTimeout(onComplete, 1000);
+            }
+          }, 1500);
         }
-      }, currentStageIndex * 6000 + progress * 150); // 6 seconds per stage
-    }
-    
-    currentStageIndex++;
-    
-    // Schedule next stage
-    if (currentStageIndex < stages.length) {
-      setTimeout(simulateStage, 6000);
+      }, progress * 200); // 200ms between progress updates
     }
   };
   

@@ -136,6 +136,13 @@ export function WorkflowVisualization({
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
   const [hoveredStage, setHoveredStage] = useState<string | null>(null);
 
+  // Reset selected stage when workflow resets
+  useEffect(() => {
+    if (workflowData.overallProgress === 0) {
+      setSelectedStage(null);
+    }
+  }, [workflowData.overallProgress]);
+
   const handleStageClick = (stageId: string) => {
     setSelectedStage(selectedStage === stageId ? null : stageId);
     onStageClick?.(stageId);
@@ -196,15 +203,22 @@ export function WorkflowVisualization({
     <div className={cn("w-full h-full flex flex-col bg-gradient-to-br from-slate-50 to-white", className)}>
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Pipeline Row - Expanded to match content width */}
-        <div className="flex-shrink-0 p-2 sm:p-4">
+                {/* Pipeline Row - Expanded to match content width */}
+        <div className="flex-shrink-0 p-1">
           <div className={cn(
-            "mx-auto transition-all duration-300",
+            "mx-auto transition-all duration-300 px-6",
             isChatOpen 
               ? "w-full max-w-none pr-96" // Full width minus chat space
               : "w-full max-w-7xl" // Full width on larger screens
           )}>
-            <div className="relative">
+            <div className={cn(
+              "relative",
+              isChatOpen ? "pr-6" : "" // Add right padding when chat is open
+            )}>
+            <div className={cn(
+              "relative",
+              isChatOpen ? "pr-6" : "" // Add right padding when chat is open
+            )}>
               {/* Background Connection Line */}
               <div className="absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-slate-200 via-slate-300 to-slate-200 transform -translate-y-1/2 rounded-full" />
               
@@ -346,6 +360,7 @@ export function WorkflowVisualization({
                   );
                 })}
               </div>
+              </div>
             </div>
           </div>
         </div>
@@ -364,15 +379,15 @@ export function WorkflowVisualization({
             </div>
           ) : (
             <div className={cn(
-              "h-full flex items-center justify-center p-4 sm:p-6 transition-all duration-300",
+              "h-full flex items-center justify-center p-2 transition-all duration-300",
               isChatOpen ? "pr-96" : ""
             )}>
-              <div className="text-center text-slate-500">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              <div className="text-center text-slate-500 max-w-sm mx-auto">
+                <div className="w-12 h-12 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <Zap className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-2">Workflow Ready</h3>
-                <p className="text-xs sm:text-sm">Click on any stage to view details or start the workflow</p>
+                <h3 className="text-base font-semibold text-slate-900 mb-2">Workflow Ready</h3>
+                <p className="text-xs">Click on any stage to view details or start the workflow</p>
               </div>
             </div>
           )}
@@ -431,35 +446,35 @@ function EnhancedStageDetails({ stage, onClose }: EnhancedStageDetailsProps) {
       transition={{ duration: 0.4 }}
     >
       {/* Header */}
-      <div className="flex-shrink-0 bg-gradient-to-r from-slate-50 to-slate-100 p-6 border-b border-slate-200/50">
+      <div className="flex-shrink-0 bg-gradient-to-r from-slate-50 to-slate-100 p-4 border-b border-slate-200/50">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <motion.div 
-              className="w-12 h-12 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl flex items-center justify-center shadow-lg"
+              className="w-10 h-10 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl flex items-center justify-center shadow-lg"
               whileHover={{ scale: 1.05, rotate: 5 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
-              <IconComponent className="w-6 h-6 text-white" />
+              <IconComponent className="w-5 h-5 text-white" />
             </motion.div>
             <div>
-              <h3 className="text-xl font-bold text-slate-900 mb-1">{stage.name}</h3>
-              <p className="text-slate-600 text-sm">{stage.description}</p>
+              <h3 className="text-lg font-bold text-slate-900 mb-0.5">{stage.name}</h3>
+              <p className="text-slate-600 text-xs">{stage.description}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className={cn(
-              "px-3 py-1 rounded-full text-sm font-semibold border",
+              "px-2 py-1 rounded-full text-xs font-semibold border",
               statusBadge.color
             )}>
               {statusBadge.text}
             </div>
             <motion.button
               onClick={onClose}
-              className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all"
+              className="w-7 h-7 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
-              <X className="w-4 h-4" />
+              <X className="w-3 h-3" />
             </motion.button>
           </div>
         </div>

@@ -269,19 +269,8 @@ export function useWorkflowManager() {
     // Use the demo simulation to trigger real-time events
     simulateWorkflowEvents(
       (event) => {
-        // In a real scenario, this would be handled by the backend
-        // For demo purposes, we'll manually trigger the event processing
         console.log('Demo Event:', event);
         
-        // Simulate adding event to stream context
-        // This would normally be done by the backend
-        const mockStreamContext = {
-          values: {
-            ui: [event]
-          }
-        };
-        
-        // Process the event manually
         const agentName = event.props?.agent_name as string;
         const content = event.props?.content as string;
         const progress = event.props?.progress as number;
@@ -313,6 +302,9 @@ export function useWorkflowManager() {
                   return {
                     ...updatedStage,
                     content: content || stage.content,
+                    status: 'completed' as const,
+                    endTime: new Date(),
+                    progress: 100,
                     stories: stageData?.stories || stage.stories,
                     designContent: stageData?.designContent || stage.designContent,
                     codeFiles: stageData?.codeFiles || stage.codeFiles,
@@ -323,12 +315,15 @@ export function useWorkflowManager() {
                   return updatedStage;
               }
             } else if (stage.status === 'active' && stage.id !== stageId) {
-              return {
-                ...stage,
-                status: 'completed' as const,
-                endTime: new Date(),
-                progress: 100
-              };
+              // Only complete other stages when a new stage starts (not during progress updates)
+              if (event.name === 'progress' && progress === 0) {
+                return {
+                  ...stage,
+                  status: 'completed' as const,
+                  endTime: new Date(),
+                  progress: 100
+                };
+              }
             }
             return stage;
           });
