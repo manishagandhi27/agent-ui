@@ -10,6 +10,8 @@ import Link from "next/link";
 import React from "react";
 
 export default function ChatPage(): React.ReactNode {
+  console.log("ChatPage component loaded");
+  
   return (
     <React.Suspense fallback={<div>Loading Chat...</div>}>
       <Toaster />

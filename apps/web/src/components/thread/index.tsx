@@ -26,6 +26,7 @@ import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import ThreadHistory from "./history";
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useFilteredMessages } from "@/hooks/useFilteredMessages";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
 import { GitHubSVG } from "../icons/github";
@@ -99,6 +100,8 @@ function OpenGitHubRepo() {
 }
 
 export function Thread() {
+  console.log("Thread component loaded");
+  
   const [threadId, setThreadId] = useQueryState("threadId");
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
     "chatHistoryOpen",
@@ -111,7 +114,7 @@ export function Thread() {
   const [input, setInput] = useState("");
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
   const [progressEvents, setProgressEvents] = useState<any[]>([]);
-  const [displayedProgressEvents, setDisplayedProgressEvents] = useState<any[]>([]);
+  const [aiResponseEvents, setAiResponseEvents] = useState<any[]>([]);
   const [latestProgressEvent, setLatestProgressEvent] = useState<any | null>(null);
   const [lastAiMessageId, setLastAiMessageId] = useState<string | null>(null);
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
@@ -120,55 +123,57 @@ export function Thread() {
   const messages = stream.messages;
   const isLoading = stream.isLoading;
   const uiEvents = stream.values.ui ?? [];
+  
+  console.log("Thread state:", {
+    threadId,
+    messagesCount: messages.length,
+    uiEventsCount: uiEvents.length,
+    isLoading
+  });
 
   const lastError = useRef<string | undefined>(undefined);
-  const processedEventIds = useRef<Set<string>>(new Set());
 
-  // Track progress events and simulate real-time display
+  // Track UI events (progress and ai_response)
   useEffect(() => {
-    const newProgressEvents = uiEvents.filter((ui) => ui.name === "progress");
+    console.log("UI events changed:", uiEvents);
     
-    // Find events we haven't processed yet
-    const unprocessedEvents = newProgressEvents.filter(event => {
-      const eventId = event.id || `${event.props?.content || event.props?.text}-${event.props?.agent_name}`;
-      return !processedEventIds.current.has(eventId);
+    const newProgressEvents = uiEvents.filter((ui) => ui.name === "progress");
+    const newAiResponseEvents = uiEvents.filter((ui) => ui.name === "ai_response");
+    
+    console.log("Filtered UI events:", {
+      progressEvents: newProgressEvents.length,
+      aiResponseEvents: newAiResponseEvents.length
     });
-
-    if (unprocessedEvents.length > 0) {
-      // Add new events to our state
-      setProgressEvents(prev => {
+    
+    // Process progress events
+    if (newProgressEvents.length > 0) {
+      const latestProgress = newProgressEvents[newProgressEvents.length - 1];
+      console.log("Setting latest progress event:", latestProgress);
+      setLatestProgressEvent(latestProgress);
+    }
+    
+    // Process AI response events
+    if (newAiResponseEvents.length > 0) {
+      console.log("Processing AI response events:", newAiResponseEvents);
+      setAiResponseEvents(prev => {
         const newEvents = [...prev];
-        unprocessedEvents.forEach(event => {
-          const eventId = event.id || `${event.props?.content || event.props?.text}-${event.props?.agent_name}`;
-          if (!newEvents.find(e => (e.id || `${e.props?.content || e.props?.text}-${e.props?.agent_name}`) === eventId)) {
+        newAiResponseEvents.forEach(event => {
+          const eventId = event.id || `${event.props?.content}-${event.props?.agent_name}`;
+          if (!newEvents.find(e => (e.id || `${e.props?.content}-${e.props?.agent_name}`) === eventId)) {
             newEvents.push(event);
-            processedEventIds.current.add(eventId);
           }
         });
         return newEvents;
       });
-
-      // Simulate real-time display by showing events with delays
-      unprocessedEvents.forEach((event, index) => {
-        setTimeout(() => {
-          setDisplayedProgressEvents(prev => {
-            const eventId = event.id || `${event.props?.content || event.props?.text}-${event.props?.agent_name}`;
-            if (!prev.find(e => (e.id || `${e.props?.content || e.props?.text}-${e.props?.agent_name}`) === eventId)) {
-              return [...prev, event];
-            }
-            return prev;
-          });
-        }, index * 500); // Show each event with a 500ms delay
-      });
     }
   }, [uiEvents]);
 
-  // Reset progress events when starting a new conversation
+  // Reset events when starting a new conversation
   useEffect(() => {
-    if (!isLoading && (progressEvents.length > 0 || displayedProgressEvents.length > 0)) {
+    if (!isLoading && (progressEvents.length > 0 || aiResponseEvents.length > 0)) {
       setProgressEvents([]);
-      setDisplayedProgressEvents([]);
-      processedEventIds.current.clear();
+      setAiResponseEvents([]);
+      setLatestProgressEvent(null);
     }
   }, [isLoading]);
 
@@ -214,14 +219,6 @@ export function Thread() {
     prevMessageLength.current = messages.length;
   }, [messages]);
 
-  // Show only the latest progress event
-  useEffect(() => {
-    const progressEvents = uiEvents.filter((ui) => ui.name === "progress");
-    if (progressEvents.length > 0) {
-      setLatestProgressEvent(progressEvents[progressEvents.length - 1]);
-    }
-  }, [uiEvents]);
-
   // Remove progress indicator when an AI message arrives
   useEffect(() => {
     const lastAiMsg = messages.slice().reverse().find(m => m.type === "ai");
@@ -238,8 +235,7 @@ export function Thread() {
     setLatestProgressEvent(null);
     setLastAiMessageId(null);
     setProgressEvents([]); // Clear progress events for new conversation
-    setDisplayedProgressEvents([]); // Clear displayed events
-    processedEventIds.current.clear(); // Clear processed event IDs
+    setAiResponseEvents([]); // Clear AI response events
 
     const newHumanMessage: Message = {
       id: uuidv4(),
@@ -275,8 +271,7 @@ export function Thread() {
     setLatestProgressEvent(null);
     setLastAiMessageId(null);
     setProgressEvents([]); // Clear progress events for regeneration
-    setDisplayedProgressEvents([]); // Clear displayed events
-    processedEventIds.current.clear(); // Clear processed event IDs
+    setAiResponseEvents([]); // Clear AI response events
     stream.submit(undefined, {
       checkpoint: parentCheckpoint,
       streamMode: ["values"],
@@ -288,20 +283,8 @@ export function Thread() {
     (m) => m.type === "ai" || m.type === "tool",
   );
 
-  // Filter out duplicate message content to prevent showing the same response multiple times
-  const deduplicatedMessages = messages.filter((message, index, array) => {
-    // Always show human messages
-    if (message.type === "human") return true;
-    
-    // For AI and tool messages, check if we've seen this content before
-    const content = typeof message.content === "string" ? message.content : "";
-    const previousMessageWithSameContent = array
-      .slice(0, index)
-      .find(m => typeof m.content === "string" && m.content === content);
-    
-    // Only show if we haven't seen this content before
-    return !previousMessageWithSameContent;
-  });
+  // Use centralized message filtering hook
+  const filteredMessages = useFilteredMessages(messages);
 
   // Find the last AI or tool message
   const lastAiOrToolMsg = [...messages].reverse().find(
@@ -309,7 +292,7 @@ export function Thread() {
   );
 
   // Show progress events if we have them
-  const showProgressEvents = displayedProgressEvents.length > 0;
+  const showProgressEvents = latestProgressEvent !== null;
 
   return (
     <div className="flex w-full h-screen overflow-hidden">
@@ -446,36 +429,38 @@ export function Thread() {
             contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
             content={
               <>
-                {deduplicatedMessages
-                  .filter((m) => !m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX))
-                  .map((message, index) => {
-                    if (message.type === "human") {
-                      return <HumanMessage key={message.id || index} message={message} isLoading={isLoading} />;
-                    }
-                    if (message.type === "progress") {
-                      return <ProgressBubble key={message.id || index} content={message.props?.content} agentName={message.props?.agent_name} />;
-                    }
-                    if (message.type === "ai_response" && message.props?.progress === 100) {
-                      return <AiResponseBubble key={message.id || index} content={message.props?.content} />;
-                    }
-                    return null;
-                  })}
-                {/* Special rendering case where there are no AI/tool messages, but there is an interrupt.
-                    We need to render it outside of the messages list, since there are no messages to render */}
+                {/* Render regular chat messages */}
+                {filteredMessages.map((message, index) => {
+                  if (message.type === "human") {
+                    return <HumanMessage key={message.id || index} message={message} isLoading={isLoading} />;
+                  }
+                  return null;
+                })}
+                
+                {/* Render AI response bubbles from UI events */}
+                {aiResponseEvents.map((event, index) => (
+                  <AiResponseBubble 
+                    key={event.id || `ai-response-${index}`} 
+                    content={event.props?.content} 
+                  />
+                ))}
+                
+                {/* Render progress bubble from UI events (only if no AI response events exist) */}
+                {latestProgressEvent && aiResponseEvents.length === 0 && (
+                  <ProgressBubble
+                    key={latestProgressEvent.id || latestProgressEvent.props?.content}
+                    agentName={latestProgressEvent.props?.agent_name}
+                    content={latestProgressEvent.props?.content}
+                  />
+                )}
+                
+                {/* Special rendering case where there are no AI/tool messages, but there is an interrupt */}
                 {hasNoAIOrToolMessages && !!stream.interrupt && (
                   <AssistantMessage
                     key="interrupt-msg"
                     message={undefined}
                     isLoading={isLoading}
                     handleRegenerate={handleRegenerate}
-                  />
-                )}
-                {/* Progress as chat bubble */}
-                {latestProgressEvent && (
-                  <ProgressBubble
-                    key={latestProgressEvent.id || latestProgressEvent.props?.content}
-                    agentName={latestProgressEvent.props?.agent_name}
-                    content={latestProgressEvent.props?.content}
                   />
                 )}
               </>

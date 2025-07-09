@@ -9,6 +9,7 @@ import { AssistantMessage } from '../thread/messages/ai';
 import { HumanMessage } from '../thread/messages/human';
 import { ProgressBubble } from '../thread/messages/progress-bubble';
 import { LoaderCircle, Send } from 'lucide-react';
+import { useFilteredMessages } from '@/hooks/useFilteredMessages';
 import {
   DO_NOT_RENDER_ID_PREFIX,
   ensureToolCallsHaveResponses,
@@ -91,25 +92,14 @@ export function SidePanelChat({ className }: SidePanelChatProps) {
     });
   };
 
-  // Filter out duplicate message content
-  const deduplicatedMessages = messages.filter((message, index, array) => {
-    if (message.type === "human") return true;
-    
-    const content = typeof message.content === "string" ? message.content : "";
-    const previousMessageWithSameContent = array
-      .slice(0, index)
-      .find(m => typeof m.content === "string" && m.content === content);
-    
-    return !previousMessageWithSameContent;
-  });
+  // Use centralized message filtering hook
+  const filteredMessages = useFilteredMessages(messages);
 
   return (
     <div className={cn("flex flex-col h-full bg-white", className)}>
       {/* Messages Area - Reduced height to prevent hiding reset button */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style={{ maxHeight: 'calc(100vh - 200px)' }}>
-        {deduplicatedMessages
-          .filter((m) => !m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX))
-          .map((message, index) =>
+        {filteredMessages.map((message, index) =>
             message.type === "human" ? (
               <HumanMessage
                 key={message.id || `${message.type}-${index}`}
