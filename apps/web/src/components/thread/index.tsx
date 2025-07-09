@@ -156,13 +156,18 @@ export function Thread() {
     if (newAiResponseEvents.length > 0) {
       console.log("Processing AI response events:", newAiResponseEvents);
       setAiResponseEvents(prev => {
+        console.log("Previous AI response events:", prev);
         const newEvents = [...prev];
         newAiResponseEvents.forEach(event => {
           const eventId = event.id || `${event.props?.content}-${event.props?.agent_name}`;
           if (!newEvents.find(e => (e.id || `${e.props?.content}-${e.props?.agent_name}`) === eventId)) {
             newEvents.push(event);
+            console.log("Added new AI response event:", event);
+          } else {
+            console.log("Skipped duplicate AI response event:", event);
           }
         });
+        console.log("Updated AI response events:", newEvents);
         return newEvents;
       });
     }
@@ -438,12 +443,15 @@ export function Thread() {
                 })}
                 
                 {/* Render AI response bubbles from UI events */}
-                {aiResponseEvents.map((event, index) => (
-                  <AiResponseBubble 
-                    key={event.id || `ai-response-${index}`} 
-                    content={event.props?.content} 
-                  />
-                ))}
+                {aiResponseEvents.map((event, index) => {
+                  console.log("Rendering AI response bubble:", event);
+                  return (
+                    <AiResponseBubble 
+                      key={event.id || `ai-response-${index}`} 
+                      content={event.props?.content} 
+                    />
+                  );
+                })}
                 
                 {/* Render progress bubble from UI events (only if no AI response events exist) */}
                 {latestProgressEvent && aiResponseEvents.length === 0 && (
@@ -453,6 +461,13 @@ export function Thread() {
                     content={latestProgressEvent.props?.content}
                   />
                 )}
+                
+                {/* Debug info */}
+                {console.log("Rendering debug:", {
+                  aiResponseEventsCount: aiResponseEvents.length,
+                  latestProgressEvent: !!latestProgressEvent,
+                  showProgressBubble: !!(latestProgressEvent && aiResponseEvents.length === 0)
+                })}
                 
                 {/* Special rendering case where there are no AI/tool messages, but there is an interrupt */}
                 {hasNoAIOrToolMessages && !!stream.interrupt && (
