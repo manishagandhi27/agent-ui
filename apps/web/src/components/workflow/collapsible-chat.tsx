@@ -76,7 +76,7 @@ export function CollapsibleChat({ isOpen, onToggle, className }: CollapsibleChat
                     <MessageCircle className="w-4 h-4 text-white" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-bold text-slate-900 text-sm">Forge Genie</span>
+                    <span className="font-bold text-slate-900 text-sm">APEX Commander</span>
                     <span className="text-xs text-slate-600">SDLC Workflow Manager</span>
                   </div>
                 </motion.div>

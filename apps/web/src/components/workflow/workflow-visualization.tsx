@@ -136,6 +136,13 @@ export function WorkflowVisualization({
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
   const [hoveredStage, setHoveredStage] = useState<string | null>(null);
 
+  // Auto-select stage based on workflowData.currentStage
+  useEffect(() => {
+    if (workflowData.currentStage && workflowData.currentStage !== selectedStage) {
+      setSelectedStage(workflowData.currentStage);
+    }
+  }, [workflowData.currentStage, selectedStage]);
+
   // Reset selected stage when workflow resets
   useEffect(() => {
     if (workflowData.overallProgress === 0) {

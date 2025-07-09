@@ -107,32 +107,6 @@ export function SidePanelChat({ className }: SidePanelChatProps) {
     <div className={cn("flex flex-col h-full bg-white", className)}>
       {/* Messages Area - Reduced height to prevent hiding reset button */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style={{ maxHeight: 'calc(100vh - 200px)' }}>
-        {/* Welcome Message - Show when no messages exist */}
-        {deduplicatedMessages.length === 0 && !isLoading && (
-          <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200/50">
-            <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-gradient-to-br from-slate-900 to-slate-800 rounded-lg flex items-center justify-center shadow-sm">
-                <span className="text-sm text-white">🔧</span>
-              </div>
-            </div>
-            <div className="flex-1">
-              <div className="font-semibold text-slate-900 mb-2">Welcome to Forge Genie</div>
-              <div className="text-slate-700 text-sm leading-relaxed">
-                I'm here to help you execute your SDLC workflow. To get started, please provide the <strong>EPIC ID</strong> for the project you'd like to work on.
-              </div>
-              <div className="mt-3 p-3 bg-white rounded-lg border border-slate-200">
-                <div className="text-xs text-slate-600 mb-2">Example format:</div>
-                <div className="font-mono text-sm text-slate-800 bg-slate-50 px-2 py-1 rounded">
-                  INSPAI-444
-                </div>
-              </div>
-              <div className="mt-3 text-xs text-slate-500">
-                Simply type the EPIC ID below and I'll initiate the complete workflow for you.
-              </div>
-            </div>
-          </div>
-        )}
-
         {deduplicatedMessages
           .filter((m) => !m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX))
           .map((message, index) =>
@@ -185,8 +159,8 @@ export function SidePanelChat({ className }: SidePanelChatProps) {
                   form?.requestSubmit();
                 }
               }}
-              placeholder="Enter EPIC ID (e.g., INSPAI-444)..."
-              className="w-full p-3 pr-12 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent text-sm bg-white"
+              placeholder="Type your message..."
+              className="w-full p-3 pr-12 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
               rows={1}
               style={{ minHeight: '44px', maxHeight: '120px' }}
             />
@@ -194,7 +168,7 @@ export function SidePanelChat({ className }: SidePanelChatProps) {
               type="submit"
               size="sm"
               disabled={isLoading || !input.trim()}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 bg-slate-900 hover:bg-slate-800 border-0"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 bg-blue-600 hover:bg-blue-700 border-0"
             >
               {isLoading ? (
                 <LoaderCircle className="w-4 h-4 animate-spin text-white" />

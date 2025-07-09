@@ -73,7 +73,7 @@ function SDLCLayout({
     <div className="h-screen w-full bg-slate-50 overflow-hidden">
       {/* Modern Header */}
       <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
-        <div className="flex items-center justify-between px-6 py-3">
+        <div className="flex items-center justify-between px-8 py-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl flex items-center justify-center shadow-lg">
@@ -110,9 +110,9 @@ function SDLCLayout({
       </div>
 
       {/* Main Content - Modern Design */}
-      <div className="h-[calc(100vh-64px)] relative p-2">
+      <div className="h-[calc(100vh-72px)] relative p-6">
         {/* Workflow Visualization */}
-        <div className="w-full h-full mx-2 bg-white/60 backdrop-blur-xl rounded-3xl border border-slate-200/40 shadow-xl overflow-hidden">
+        <div className="w-full h-full bg-white/60 backdrop-blur-xl rounded-3xl border border-slate-200/40 shadow-xl overflow-hidden">
           <WorkflowVisualization
             workflowData={workflowData}
             onStageClick={handleStageClick}

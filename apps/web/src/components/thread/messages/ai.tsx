@@ -73,35 +73,28 @@ function ProgressMessage({ progress }: { progress: any }) {
       design_architect: "🏗️",
       code_developer: "💻", 
       test_engineer: "🧪",
-      supervisor: "👨‍💼"
+      supervisor: "👨‍��"
     };
     return type && icons[type] ? icons[type] : "🤖";
   };
 
   return (
-    <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+    <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
       <div className="flex-shrink-0">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center text-lg text-white shadow-sm">
+        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-lg">
           {getAgentIcon(progress?.agent_type)}
         </div>
       </div>
       <div className="flex-1">
         {progress?.agent_name && (
-          <div className="font-medium text-slate-900 mb-1 flex items-center gap-2">
-            <span>{progress.agent_name}</span>
-            <div className="w-4 h-4 bg-slate-200 rounded-full flex items-center justify-center">
-              <svg className="w-2.5 h-2.5 text-slate-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </div>
-          </div>
+          <div className="font-medium text-blue-900 mb-1">{progress.agent_name}</div>
         )}
-        <div className="text-slate-700 flex items-center gap-2">
+        <div className="text-blue-800 flex items-center gap-2">
           <span>{progress?.content || "Working..."}</span>
           <div className="flex gap-1">
-            <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-            <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
           </div>
         </div>
       </div>
@@ -157,16 +150,11 @@ export function AssistantMessage({
   }
 
   return (
-    <div className="flex items-start gap-2 group">
-      <div className="flex-shrink-0">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center text-white shadow-sm">
-          <span className="text-sm">🤖</span>
-        </div>
-      </div>
+    <div className="flex items-start mr-auto gap-2 group">
       {isToolResult ? (
         <ToolResult message={message} />
       ) : (
-        <div className="flex flex-col gap-2 flex-1">
+        <div className="flex flex-col gap-2">
           {contentString.length > 0 && (
             <div className="py-1">
               <MarkdownText>{contentString}</MarkdownText>
@@ -197,7 +185,7 @@ export function AssistantMessage({
           ) : null}
           <div
             className={cn(
-              "flex gap-2 items-center transition-opacity",
+              "flex gap-2 items-center mr-auto transition-opacity",
               "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
             )}
           >

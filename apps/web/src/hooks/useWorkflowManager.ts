@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { WorkflowData, WorkflowStage, Story, CodeFile, TestCase } from '@/components/workflow/workflow-visualization';
 import { useStreamContext } from '@/providers/Stream';
-import { simulateWorkflowEvents } from '@/lib/demo-simulation';
 
 const INITIAL_STAGES: WorkflowStage[] = [
   {
@@ -82,7 +81,7 @@ export function useWorkflowManager() {
     'supervisor': 'story_generation' // Default fallback
   };
 
-  // Enhanced event processing for real-time updates
+  // Robust event processing for reliable workflow progression
   useEffect(() => {
     const progressEvents = uiEvents.filter((ui) => ui.name === "progress");
     const contentEvents = uiEvents.filter((ui) => ui.name === "content_ready");
@@ -105,51 +104,70 @@ export function useWorkflowManager() {
     const stageId = agentToStageMap[agentName.toLowerCase()] || 'story_generation';
     
     setWorkflowData(prev => {
-      const updatedStages = prev.stages.map(stage => {
+      // Get current workflow state
+      const currentStages = prev.stages;
+      const currentActiveStage = currentStages.find(s => s.status === 'active');
+      const targetStage = currentStages.find(s => s.id === stageId);
+      
+      // Robust stage progression logic
+      const updatedStages = currentStages.map(stage => {
         if (stage.id === stageId) {
+          // Target stage logic
+          const currentStatus = stage.status;
+          let newStatus = currentStatus;
+          let newProgress = stage.progress || 0;
+          
+          // Determine new status based on event and current state
+          if (latestEvent.name === 'content_ready') {
+            // Content ready always marks stage as completed
+            newStatus = 'completed';
+            newProgress = 100;
+          } else if (latestEvent.name === 'progress') {
+            if (progress !== undefined) {
+              newProgress = progress;
+              // Only move to completed if progress is 100
+              if (progress >= 100) {
+                newStatus = 'completed';
+              } else if (currentStatus === 'pending') {
+                // Move from pending to active only if this is the first progress event
+                newStatus = 'active';
+              }
+            }
+          } else if (latestEvent.name === 'ai_response') {
+            if (progress !== undefined && progress >= 100) {
+              newStatus = 'completed';
+              newProgress = 100;
+            }
+          }
+          
           // Enhanced stage update with structured content
           const updatedStage = {
             ...stage,
-            status: 'active' as const,
+            status: newStatus,
             agentName: agentName,
-            startTime: stage.startTime || new Date(),
-            progress: progress || stage.progress || 0
+            startTime: stage.startTime || (newStatus === 'active' ? new Date() : stage.startTime),
+            endTime: newStatus === 'completed' ? new Date() : stage.endTime,
+            progress: newProgress,
+            content: content || stage.content
           };
 
-          // Handle different event types
+          // Handle different event types for content
           switch (latestEvent.name) {
-            case 'progress':
-              // Update progress and basic content
-              return {
-                ...updatedStage,
-                content: content || stage.content
-              };
-            
             case 'content_ready':
-              // Update with structured content data
               return {
                 ...updatedStage,
-                content: content || stage.content,
                 stories: stageData?.stories || stage.stories,
                 designContent: stageData?.designContent || stage.designContent,
                 codeFiles: stageData?.codeFiles || stage.codeFiles,
                 testCases: stageData?.testCases || stage.testCases
               };
             
-            case 'ai_response':
-              // Update with AI response content
-              return {
-                ...updatedStage,
-                content: content || stage.content,
-                status: progress >= 100 ? 'completed' as const : 'active' as const,
-                endTime: progress >= 100 ? new Date() : stage.endTime
-              };
-            
             default:
               return updatedStage;
           }
         } else if (stage.status === 'active' && stage.id !== stageId) {
-          // Mark other active stages as completed when new stage starts
+          // If a different stage becomes active, complete the current active stage
+          // This ensures only one stage is active at a time
           return {
             ...stage,
             status: 'completed' as const,
@@ -159,6 +177,22 @@ export function useWorkflowManager() {
         }
         return stage;
       });
+
+      // Auto-select logic: Select the first active stage, or the first pending stage if no active
+      let newCurrentStage = prev.currentStage;
+      const activeStage = updatedStages.find(s => s.status === 'active');
+      const firstPendingStage = updatedStages.find(s => s.status === 'pending');
+      
+      if (activeStage && activeStage.id) {
+        // Auto-select active stage
+        newCurrentStage = activeStage.id;
+      } else if (firstPendingStage && firstPendingStage.id && !prev.currentStage) {
+        // Auto-select first pending stage if no stage is currently selected
+        newCurrentStage = firstPendingStage.id;
+      } else if (activeStage && activeStage.id && prev.currentStage !== activeStage.id) {
+        // Auto-select newly activated stage
+        newCurrentStage = activeStage.id;
+      }
 
       // Calculate overall progress
       const completedStages = updatedStages.filter(s => s.status === 'completed').length;
@@ -171,7 +205,7 @@ export function useWorkflowManager() {
 
       return {
         stages: updatedStages,
-        currentStage: stageId,
+        currentStage: newCurrentStage,
         overallProgress
       };
     });
@@ -266,87 +300,23 @@ export function useWorkflowManager() {
     // Reset workflow first
     resetWorkflow();
     
-    // Use the demo simulation to trigger real-time events
-    simulateWorkflowEvents(
-      (event) => {
-        console.log('Demo Event:', event);
-        
-        const agentName = event.props?.agent_name as string;
-        const content = event.props?.content as string;
-        const progress = event.props?.progress as number;
-        const stageData = event.props?.stage_data;
-        
-        if (!agentName) return;
-        
-        const stageId = agentToStageMap[agentName.toLowerCase()] || 'story_generation';
-        
-        setWorkflowData(prev => {
-          const updatedStages = prev.stages.map(stage => {
-            if (stage.id === stageId) {
-              const updatedStage = {
-                ...stage,
-                status: 'active' as const,
-                agentName: agentName,
-                startTime: stage.startTime || new Date(),
-                progress: progress || stage.progress || 0
-              };
-              
-              switch (event.name) {
-                case 'progress':
-                  return {
-                    ...updatedStage,
-                    content: content || stage.content
-                  };
-                
-                case 'content_ready':
-                  return {
-                    ...updatedStage,
-                    content: content || stage.content,
-                    status: 'completed' as const,
-                    endTime: new Date(),
-                    progress: 100,
-                    stories: stageData?.stories || stage.stories,
-                    designContent: stageData?.designContent || stage.designContent,
-                    codeFiles: stageData?.codeFiles || stage.codeFiles,
-                    testCases: stageData?.testCases || stage.testCases
-                  };
-                
-                default:
-                  return updatedStage;
-              }
-            } else if (stage.status === 'active' && stage.id !== stageId) {
-              // Only complete other stages when a new stage starts (not during progress updates)
-              if (event.name === 'progress' && progress === 0) {
-                return {
-                  ...stage,
-                  status: 'completed' as const,
-                  endTime: new Date(),
-                  progress: 100
-                };
-              }
-            }
-            return stage;
-          });
-          
-          const completedStages = updatedStages.filter(s => s.status === 'completed').length;
-          const activeStages = updatedStages.filter(s => s.status === 'active');
-          const activeProgress = activeStages.length > 0 
-            ? activeStages.reduce((sum, stage) => sum + (stage.progress || 0), 0) / activeStages.length 
-            : 0;
-          const totalStages = updatedStages.length;
-          const overallProgress = Math.round(((completedStages + (activeStages.length * (activeProgress / 100))) / totalStages) * 100) || 0;
-          
-          return {
-            stages: updatedStages,
-            currentStage: stageId,
-            overallProgress
-          };
-        });
-      },
-      () => {
-        console.log('Demo simulation completed');
-      }
-    );
+    console.log('Demo simulation started - this would trigger real backend events in production');
+    
+    // In a real scenario, the backend would emit these events:
+    // 1. progress event for story_writer with progress: 0
+    // 2. content_ready event for story_writer with stage_data.stories
+    // 3. progress event for design_architect with progress: 0
+    // 4. content_ready event for design_architect with stage_data.designContent
+    // 5. And so on for each stage...
+    
+    // For demo purposes, we'll just log what should happen
+    console.log('Expected event sequence:');
+    console.log('1. progress event: agent_name: "story_writer", progress: 0');
+    console.log('2. content_ready event: agent_name: "story_writer", stage_data: { stories: [...] }');
+    console.log('3. progress event: agent_name: "design_architect", progress: 0');
+    console.log('4. content_ready event: agent_name: "design_architect", stage_data: { designContent: "..." }');
+    console.log('5. Continue for each stage...');
+    
   }, [resetWorkflow]);
 
   return {
