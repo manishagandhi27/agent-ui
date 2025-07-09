@@ -129,6 +129,15 @@ export function SidePanelChat({ className }: SidePanelChatProps) {
   // Use centralized message filtering hook
   const filteredMessages = useFilteredMessages(messages);
 
+  // Helper function to check if we should show progress bubble for a specific agent
+  const shouldShowProgressForAgent = (agentName: string) => {
+    // Check if there's an AI response event for the same agent
+    const hasAiResponseForAgent = aiResponseEvents.some(
+      event => event.props?.agent_name === agentName
+    );
+    return !hasAiResponseForAgent;
+  };
+
   return (
     <div className={cn("flex flex-col h-full bg-white", className)}>
       {/* Messages Area - Reduced height to prevent hiding reset button */}
@@ -161,8 +170,8 @@ export function SidePanelChat({ className }: SidePanelChatProps) {
           );
         })}
         
-        {/* Render progress bubble from UI events (show when no AI response events OR when progress is active) */}
-        {latestProgressEvent && (
+        {/* Render progress bubble only if no AI response exists for the same agent */}
+        {latestProgressEvent && shouldShowProgressForAgent(latestProgressEvent.props?.agent_name) && (
           <ProgressBubble
             key={latestProgressEvent.id || latestProgressEvent.props?.content}
             agentName={latestProgressEvent.props?.agent_name}
@@ -174,7 +183,8 @@ export function SidePanelChat({ className }: SidePanelChatProps) {
         {console.log("SidePanelChat: Rendering debug:", {
           aiResponseEventsCount: aiResponseEvents.length,
           latestProgressEvent: !!latestProgressEvent,
-          showProgressBubble: !!(latestProgressEvent && aiResponseEvents.length === 0)
+          progressAgentName: latestProgressEvent?.props?.agent_name,
+          shouldShowProgress: latestProgressEvent ? shouldShowProgressForAgent(latestProgressEvent.props?.agent_name) : false
         })}
         
         {/* Auto-scroll anchor */}
