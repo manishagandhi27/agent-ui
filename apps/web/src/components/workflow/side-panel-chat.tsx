@@ -161,8 +161,8 @@ export function SidePanelChat({ className }: SidePanelChatProps) {
           );
         })}
         
-        {/* Render progress bubble from UI events (only if no AI response events exist) */}
-        {latestProgressEvent && aiResponseEvents.length === 0 && (
+        {/* Render progress bubble from UI events (show when no AI response events OR when progress is active) */}
+        {latestProgressEvent && (
           <ProgressBubble
             key={latestProgressEvent.id || latestProgressEvent.props?.content}
             agentName={latestProgressEvent.props?.agent_name}
