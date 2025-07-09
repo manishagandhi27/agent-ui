@@ -37,6 +37,7 @@ import {
 } from "../ui/tooltip";
 import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { ProgressBubble } from "./messages/progress-bubble";
+import { AiResponseBubble } from "./messages/ai-response-bubble";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -447,22 +448,18 @@ export function Thread() {
               <>
                 {deduplicatedMessages
                   .filter((m) => !m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX))
-                  .map((message, index) =>
-                    message.type === "human" ? (
-                      <HumanMessage
-                        key={message.id || `${message.type}-${index}`}
-                        message={message}
-                        isLoading={isLoading}
-                      />
-                    ) : (
-                      <AssistantMessage
-                        key={message.id || `${message.type}-${index}`}
-                        message={message}
-                        isLoading={isLoading}
-                        handleRegenerate={handleRegenerate}
-                      />
-                    ),
-                  )}
+                  .map((message, index) => {
+                    if (message.type === "human") {
+                      return <HumanMessage key={message.id || index} message={message} isLoading={isLoading} />;
+                    }
+                    if (message.type === "progress") {
+                      return <ProgressBubble key={message.id || index} content={message.props?.content} agentName={message.props?.agent_name} />;
+                    }
+                    if (message.type === "ai_response" && message.props?.progress === 100) {
+                      return <AiResponseBubble key={message.id || index} content={message.props?.content} />;
+                    }
+                    return null;
+                  })}
                 {/* Special rendering case where there are no AI/tool messages, but there is an interrupt.
                     We need to render it outside of the messages list, since there are no messages to render */}
                 {hasNoAIOrToolMessages && !!stream.interrupt && (
