@@ -136,24 +136,42 @@ export function WorkflowVisualization({
 }: WorkflowVisualizationProps) {
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
   const [hoveredStage, setHoveredStage] = useState<string | null>(null);
+  const [manuallySelected, setManuallySelected] = useState(false);
 
-  // Auto-select stage based on workflowData.currentStage
+  // Auto-select stage based on workflowData.currentStage (only if not manually selected)
   useEffect(() => {
-    if (workflowData.currentStage && workflowData.currentStage !== selectedStage) {
+    if (workflowData.currentStage && workflowData.currentStage !== selectedStage && !manuallySelected) {
       setSelectedStage(workflowData.currentStage);
     }
-  }, [workflowData.currentStage, selectedStage]);
+  }, [workflowData.currentStage, selectedStage, manuallySelected]);
 
   // Reset selected stage when workflow resets
   useEffect(() => {
     if (workflowData.overallProgress === 0) {
       setSelectedStage(null);
+      setManuallySelected(false);
     }
   }, [workflowData.overallProgress]);
 
   const handleStageClick = (stageId: string) => {
-    setSelectedStage(selectedStage === stageId ? null : stageId);
-    onStageClick?.(stageId);
+    const clickedStage = workflowData.stages.find(s => s.id === stageId);
+    
+    // Allow clicking on any stage that has content or is completed
+    if (clickedStage && (clickedStage.status === 'completed' || clickedStage.content || 
+        clickedStage.stories || clickedStage.designContent || 
+        clickedStage.codeFiles || clickedStage.testFiles)) {
+      
+      if (selectedStage === stageId) {
+        // Deselect if clicking the same stage
+        setSelectedStage(null);
+        setManuallySelected(false);
+      } else {
+        // Select the clicked stage
+        setSelectedStage(stageId);
+        setManuallySelected(true);
+      }
+      onStageClick?.(stageId);
+    }
   };
 
   const getStatusIcon = (status: WorkflowStage['status']) => {
