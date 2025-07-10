@@ -32,6 +32,7 @@ export interface WorkflowStage {
   stories?: Story[];
   designContent?: string;
   codeFiles?: CodeFile[];
+  testFiles?: CodeFile[]; // Test files (similar to code files)
   testCases?: TestCase[];
 }
 
@@ -435,8 +436,8 @@ function EnhancedStageDetails({ stage, onClose }: EnhancedStageDetailsProps) {
           <DefaultContent stage={stage} />
         );
       case 'testing':
-        return stage.testCases && stage.testCases.length > 0 ? (
-          <TestContent testCases={stage.testCases} />
+        return stage.testFiles && stage.testFiles.length > 0 ? (
+          <TestContent testFiles={stage.testFiles} />
         ) : (
           <DefaultContent stage={stage} />
         );
@@ -674,81 +675,96 @@ function CodeContent({ files }: { files: CodeFile[] }) {
   );
 }
 
-// Test Content Component - No duplicate header
-function TestContent({ testCases }: { testCases: TestCase[] }) {
-  return (
-    <div className="overflow-y-auto p-6 space-y-4">
-      {testCases.map((testCase, index) => (
-        <motion.div
-          key={testCase.id}
-          className="group bg-gradient-to-br from-white to-slate-50 rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all duration-200 hover:border-slate-300"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
+// Test Content Component - File view for test files
+function TestContent({ testFiles }: { testFiles: CodeFile[] }) {
+  const [selectedFile, setSelectedFile] = useState<CodeFile | null>(null);
+
+  const renderFileTree = (fileList: CodeFile[], level = 0) => {
+    return fileList.map((file) => (
+      <div key={file.id} style={{ paddingLeft: `${level * 16}px` }}>
+        <div
+          className={cn(
+            "flex items-center gap-2 py-2 px-3 rounded-lg cursor-pointer hover:bg-slate-100 transition-all duration-200 group",
+            selectedFile?.id === file.id && "bg-slate-200 border border-slate-300"
+          )}
+          onClick={() => file.type === 'file' && setSelectedFile(file)}
         >
-          {/* Test Header */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-slate-900 to-slate-800 rounded-lg flex items-center justify-center shadow-sm">
-                <span className="text-white text-sm font-bold">{index + 1}</span>
-              </div>
-              <div>
-                <h4 className="font-semibold text-slate-900 mb-1">{testCase.name}</h4>
-                <p className="text-sm text-slate-600">{testCase.description}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={cn(
-                "text-xs px-2 py-1 rounded-full font-medium border",
-                testCase.priority === 'High' ? "bg-red-50 text-red-700 border-red-200" :
-                testCase.priority === 'Medium' ? "bg-amber-50 text-amber-700 border-amber-200" :
-                "bg-green-50 text-green-700 border-green-200"
-              )}>
-                {testCase.priority}
-              </span>
-              <span className={cn(
-                "text-xs px-2 py-1 rounded-full font-medium border",
-                testCase.status === 'Pass' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                testCase.status === 'Fail' ? "bg-red-50 text-red-700 border-red-200" :
-                "bg-slate-50 text-slate-600 border-slate-200"
-              )}>
-                {testCase.status}
-              </span>
-            </div>
-          </div>
-          
-          {/* Test Steps */}
-          <div className="space-y-4">
-            <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
-              <h5 className="font-medium text-slate-900 text-sm mb-3 flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
-                Test Steps
-              </h5>
-              <ol className="space-y-2">
-                {testCase.steps.map((step, idx) => (
-                  <li key={idx} className="flex items-start gap-3 text-sm text-slate-700">
-                    <div className="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center text-xs font-medium text-slate-600 flex-shrink-0">
-                      {idx + 1}
-                    </div>
-                    <span className="leading-relaxed">{step}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-            
-            {/* Expected Result */}
-            <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-              <h5 className="font-medium text-blue-900 text-sm mb-2 flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
-                Expected Result
-              </h5>
-              <p className="text-sm text-blue-800 leading-relaxed">
-                {testCase.expectedResult}
-              </p>
+          {file.type === 'directory' ? (
+            <div className="w-4 h-4 text-slate-500 group-hover:text-slate-700">📁</div>
+          ) : (
+            <div className="w-4 h-4 text-slate-500 group-hover:text-slate-700">🧪</div>
+          )}
+          <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">
+            {file.name}
+          </span>
+          {file.language && (
+            <span className="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded-md ml-auto">
+              {file.language}
+            </span>
+          )}
+        </div>
+        {file.children && renderFileTree(file.children, level + 1)}
+      </div>
+    ));
+  };
+
+  return (
+    <div className="overflow-y-auto p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Test File Tree */}
+        <div className="lg:col-span-1">
+          <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-4 border border-slate-200 shadow-sm">
+            <h5 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+              Test Files
+            </h5>
+            <div className="space-y-1 overflow-y-auto max-h-96 pr-2">
+              {renderFileTree(testFiles)}
             </div>
           </div>
-        </motion.div>
-      ))}
+        </div>
+        
+        {/* Test File Content */}
+        <div className="lg:col-span-2">
+          {selectedFile ? (
+            <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-4 border border-slate-200 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h5 className="font-semibold text-slate-900 flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                  {selectedFile.name}
+                </h5>
+                <span className="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded-md">
+                  {selectedFile.language || 'text'}
+                </span>
+              </div>
+              <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+                <div className="bg-slate-100 px-4 py-2 border-b border-slate-200">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  </div>
+                </div>
+                <div className="overflow-auto max-h-96">
+                  <pre className="text-sm text-slate-700 p-4 leading-relaxed">
+                    <code>{selectedFile.content || '// Test content will be displayed here'}</code>
+                  </pre>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-8 border border-slate-200 flex items-center justify-center shadow-sm">
+              <div className="text-center text-slate-500">
+                <div className="w-16 h-16 bg-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <CheckSquare className="w-8 h-8 text-slate-400" />
+                </div>
+                <h4 className="font-semibold text-slate-900 mb-2">Select a Test File</h4>
+                <p className="text-sm">Choose a test file from the tree to view its content</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

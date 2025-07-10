@@ -72,11 +72,11 @@ export function HumanMessage({
   return (
     <div
       className={cn(
-        "flex items-center ml-auto gap-2 group",
+        "flex justify-end gap-2 group",
         isEditing && "w-full max-w-xl",
       )}
     >
-      <div className={cn("flex flex-col gap-2", isEditing && "w-full")}>
+      <div className={cn("flex flex-col gap-2 items-end", isEditing && "w-full")}>
         {isEditing ? (
           <EditableContent
             value={value}
@@ -84,7 +84,7 @@ export function HumanMessage({
             onSubmit={handleSubmitEdit}
           />
         ) : (
-          <div className="px-4 py-3 rounded-xl bg-white/80 backdrop-blur-sm text-slate-800 shadow-lg max-w-sm border-2 border-black/60 hover:border-black/80 transition-colors duration-200 ml-auto">
+          <div className="px-4 py-3 rounded-xl bg-white/80 backdrop-blur-sm text-slate-800 shadow-lg max-w-sm border-2 border-black/60 hover:border-black/80 transition-colors duration-200">
             <span className="font-medium text-sm leading-relaxed whitespace-pre-wrap">
               {contentString}
             </span>
@@ -93,7 +93,7 @@ export function HumanMessage({
 
         <div
           className={cn(
-            "flex gap-2 items-center ml-auto transition-opacity",
+            "flex gap-2 items-center transition-opacity",
             "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
             isEditing && "opacity-100",
           )}
