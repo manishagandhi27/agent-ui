@@ -84,9 +84,11 @@ export function HumanMessage({
             onSubmit={handleSubmitEdit}
           />
         ) : (
-          <p className="px-4 py-2 rounded-3xl bg-muted w-fit ml-auto whitespace-pre-wrap">
-            {contentString}
-          </p>
+          <div className="px-4 py-3 rounded-xl bg-white/80 backdrop-blur-sm text-slate-800 shadow-lg max-w-sm border-2 border-black/60 hover:border-black/80 transition-colors duration-200 ml-auto">
+            <span className="font-medium text-sm leading-relaxed whitespace-pre-wrap">
+              {contentString}
+            </span>
+          </div>
         )}
 
         <div

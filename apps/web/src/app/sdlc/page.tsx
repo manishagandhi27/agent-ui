@@ -9,7 +9,7 @@ import { StreamProvider } from '@/providers/Stream';
 import { ThreadProvider } from '@/providers/Thread';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Play, Pause, ArrowLeft, Play as PlayIcon, MessageCircle } from 'lucide-react';
+import { RefreshCw, Play, Pause, ArrowLeft, Play as PlayIcon, MessageCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -65,6 +65,54 @@ function SDLCLayout({
   // Demo function to simulate workflow progression (for testing)
   const simulateWorkflowProgress = () => {
     runDemo();
+  };
+
+  // Demo function to simulate progress events
+  const simulateProgressEvents = () => {
+    // Simulate progress events
+    const progressEvents = [
+      {
+        id: 'demo-progress-1',
+        type: 'ui',
+        name: 'progress',
+        props: {
+          agent_name: 'story_writer',
+          content: 'Analyzing requirements and creating user stories...',
+          progress: 45
+        },
+        metadata: {}
+      },
+      {
+        id: 'demo-progress-2',
+        type: 'ui',
+        name: 'progress',
+        props: {
+          agent_name: 'design_architect',
+          content: 'Designing system architecture and UI components...',
+          progress: 30
+        },
+        metadata: {}
+      },
+      {
+        id: 'demo-progress-3',
+        type: 'ui',
+        name: 'progress',
+        props: {
+          agent_name: 'code_developer',
+          content: 'Implementing core functionality and APIs...',
+          progress: 60
+        },
+        metadata: {}
+      }
+    ];
+
+    // Add events to the stream
+    progressEvents.forEach((event, index) => {
+      setTimeout(() => {
+        stream.values.ui = [...(stream.values.ui || []), event as any];
+        console.log('Added demo progress event:', event);
+      }, index * 1000); // Add each event with 1 second delay
+    });
   };
 
   // Demo function to simulate AI response events
@@ -149,8 +197,15 @@ function SDLCLayout({
               Workflow Demo
             </Button>
             <Button
-              onClick={simulateAiResponseEvents}
+              onClick={simulateProgressEvents}
               className="bg-blue-600 hover:bg-blue-700 text-white border-0 shadow-sm hover:shadow-md transition-all duration-200 px-4 py-2 rounded-lg font-medium text-sm"
+            >
+              <Loader2 className="w-4 h-4 mr-2" />
+              Progress Demo
+            </Button>
+            <Button
+              onClick={simulateAiResponseEvents}
+              className="bg-purple-600 hover:bg-purple-700 text-white border-0 shadow-sm hover:shadow-md transition-all duration-200 px-4 py-2 rounded-lg font-medium text-sm"
             >
               <MessageCircle className="w-4 h-4 mr-2" />
               AI Response Demo
