@@ -9,9 +9,10 @@ import { StreamProvider } from '@/providers/Stream';
 import { ThreadProvider } from '@/providers/Thread';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Play, Pause, ArrowLeft, Play as PlayIcon, MessageCircle, Loader2 } from 'lucide-react';
+import { RefreshCw, Play, Pause, ArrowLeft, Play as PlayIcon, MessageCircle, Loader2, History, Rocket } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import ThreadHistory from '@/components/thread/history';
 
 export default function SDLCPage(): React.ReactNode {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -163,9 +164,88 @@ function SDLCLayout({
     });
   };
 
+  // Demo function to simulate deployment events
+  const simulateDeploymentEvents = () => {
+    console.log('Deployment demo started');
+    
+    // Simulate deployment events
+    const deploymentEvents = [
+      {
+        id: 'demo-deployment-progress-1',
+        type: 'ui',
+        name: 'progress',
+        props: {
+          agent_name: 'deployment_specialist',
+          content: 'Building Docker image and preparing deployment...',
+          progress: 25
+        },
+        metadata: {}
+      },
+      {
+        id: 'demo-deployment-progress-2',
+        type: 'ui',
+        name: 'progress',
+        props: {
+          agent_name: 'deployment_specialist',
+          content: 'Deploying to staging environment for testing...',
+          progress: 50
+        },
+        metadata: {}
+      },
+      {
+        id: 'demo-deployment-progress-3',
+        type: 'ui',
+        name: 'progress',
+        props: {
+          agent_name: 'deployment_specialist',
+          content: 'Running health checks and performance tests...',
+          progress: 75
+        },
+        metadata: {}
+      },
+      {
+        id: 'demo-deployment-complete',
+        type: 'ui',
+        name: 'content_ready',
+        props: {
+          agent_name: 'deployment_specialist',
+          content: 'Application successfully deployed to production!',
+          progress: 100,
+          stage_data: {
+            deploymentInfo: {
+              applicationName: 'APEX Application',
+              environment: 'production',
+              url: 'https://apex-app.example.com',
+              version: '1.2.3',
+              status: 'success',
+              timestamp: new Date(),
+              buildNumber: '12345',
+              commitHash: 'abc123def456',
+              healthCheck: 'passed',
+              deploymentLogs: 'Deployment completed successfully\nHealth checks passed\nPerformance tests passed\nApplication is live and ready'
+            }
+          }
+        },
+        metadata: {}
+      }
+    ];
+
+    console.log('Deployment events to be added:', deploymentEvents);
+
+    // Add events to the stream
+    deploymentEvents.forEach((event, index) => {
+      setTimeout(() => {
+        stream.values.ui = [...(stream.values.ui || []), event as any];
+        console.log('Added demo deployment event:', event);
+      }, index * 1000); // Add each event with 1 second delay
+    });
+  };
+
   const toggleWorkflowPause = () => {
     setIsWorkflowPaused(!isWorkflowPaused);
   };
+
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
     return (
     <div className="h-screen w-full bg-slate-50 overflow-hidden">
@@ -211,6 +291,21 @@ function SDLCLayout({
               AI Response Demo
             </Button>
             <Button
+              onClick={simulateDeploymentEvents}
+              className="bg-orange-600 hover:bg-orange-700 text-white border-0 shadow-sm hover:shadow-md transition-all duration-200 px-4 py-2 rounded-lg font-medium text-sm"
+            >
+              <Rocket className="w-4 h-4 mr-2" />
+              Deployment Demo
+            </Button>
+            <Button
+              onClick={() => setIsHistoryOpen(true)}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 border-0 shadow-sm hover:shadow-md transition-all duration-200 px-3 py-2 rounded-lg font-medium text-sm"
+              title="History"
+            >
+              <History className="w-5 h-5 mr-2" />
+              History
+            </Button>
+            <Button
               onClick={handleResetWorkflow}
               className="bg-slate-900 hover:bg-slate-800 text-white border-0 shadow-sm hover:shadow-md transition-all duration-200 px-4 py-2 rounded-lg font-medium text-sm"
             >
@@ -240,6 +335,31 @@ function SDLCLayout({
         />
       </div>
 
+      {/* History Side Panel */}
+      {isHistoryOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* Overlay */}
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsHistoryOpen(false)} />
+          {/* Side Panel */}
+          <div className="relative bg-white w-full max-w-md h-full shadow-2xl border-l border-slate-200 z-50">
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <span className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                <History className="w-5 h-5" />
+                History
+              </span>
+              <Button size="icon" variant="ghost" onClick={() => setIsHistoryOpen(false)}>
+                <span className="sr-only">Close</span>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </Button>
+            </div>
+            <div className="h-[calc(100vh-64px)] overflow-y-auto">
+              <ThreadHistory />
+            </div>
+          </div>
+        </div>
+      )}
       {/* Removed redundant bottom status bar - progress info already in header */}
     </div>
   );

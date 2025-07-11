@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { WorkflowData, WorkflowStage, Story, CodeFile, TestCase } from '@/components/workflow/workflow-visualization';
+import { WorkflowData, WorkflowStage, Story, CodeFile, TestCase, DeploymentInfo } from '@/components/workflow/workflow-visualization';
 import { useStreamContext } from '@/providers/Stream';
 
 const INITIAL_STAGES: WorkflowStage[] = [
@@ -53,6 +53,7 @@ interface ContentEvent {
       designContent?: string;
       codeFiles?: CodeFile[];
       testCases?: TestCase[];
+      deploymentInfo?: DeploymentInfo;
     };
     message?: string;
   };
@@ -78,6 +79,7 @@ export function useWorkflowManager() {
     'code_developer': 'code_generation',
     'test_engineer': 'testing',
     'deployment_manager': 'deployment',
+    'deployment_specialist': 'deployment',
     'supervisor': 'story_generation' // Default fallback
   };
 
@@ -98,10 +100,21 @@ export function useWorkflowManager() {
     const progress = latestEvent.props?.progress as number;
     const stageData = latestEvent.props?.stage_data as ContentEvent['props']['stage_data'];
     
+    console.log('Processing workflow event:', {
+      eventName: latestEvent.name,
+      agentName,
+      content,
+      progress,
+      stageData,
+      hasDeploymentInfo: !!stageData?.deploymentInfo
+    });
+    
     if (!agentName) return;
 
     // Find the stage this agent corresponds to
     const stageId = agentToStageMap[agentName.toLowerCase()] || 'story_generation';
+    
+    console.log('Mapped agent to stage:', { agentName, stageId });
     
     setWorkflowData(prev => {
       // Get current workflow state
@@ -159,7 +172,8 @@ export function useWorkflowManager() {
                 stories: stageData?.stories || stage.stories,
                 designContent: stageData?.designContent || stage.designContent,
                 codeFiles: stageData?.codeFiles || stage.codeFiles,
-                testCases: stageData?.testCases || stage.testCases
+                testCases: stageData?.testCases || stage.testCases,
+                deploymentInfo: stageData?.deploymentInfo || stage.deploymentInfo
               };
             
             default:

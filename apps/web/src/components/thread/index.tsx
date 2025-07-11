@@ -20,6 +20,7 @@ import {
   PanelRightOpen,
   PanelRightClose,
   SquarePen,
+  History,
 } from "lucide-react";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -301,26 +302,17 @@ export function Thread() {
 
   return (
     <div className="flex w-full h-screen overflow-hidden">
-      <div className="relative lg:flex hidden">
-        <motion.div
-          className="absolute h-full border-r bg-white overflow-hidden z-20"
-          style={{ width: 300 }}
-          animate={
-            isLargeScreen
-              ? { x: chatHistoryOpen ? 0 : -300 }
-              : { x: chatHistoryOpen ? 0 : -300 }
-          }
-          initial={{ x: -300 }}
-          transition={
-            isLargeScreen
-              ? { type: "spring", stiffness: 300, damping: 30 }
-              : { duration: 0 }
-          }
+      {/* History Button - always visible in header */}
+      <div className="absolute top-4 right-4 z-50">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+          onClick={() => setChatHistoryOpen((p) => !p)}
         >
-          <div className="relative h-full" style={{ width: 300 }}>
-            <ThreadHistory />
-          </div>
-        </motion.div>
+          <History className="w-4 h-4" />
+          History
+        </Button>
       </div>
       <motion.div
         className={cn(

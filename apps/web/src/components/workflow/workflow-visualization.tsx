@@ -34,6 +34,7 @@ export interface WorkflowStage {
   codeFiles?: CodeFile[];
   testFiles?: CodeFile[]; // Test files (similar to code files)
   testCases?: TestCase[];
+  deploymentInfo?: DeploymentInfo; // Added for deployment stage
 }
 
 export interface Story {
@@ -65,6 +66,20 @@ export interface TestCase {
   expectedResult: string;
   status: 'Pass' | 'Fail' | 'Pending';
   priority: 'High' | 'Medium' | 'Low';
+}
+
+export interface DeploymentInfo {
+  applicationName: string;
+  environment: string;
+  status: 'success' | 'failed' | 'in-progress';
+  timestamp: Date;
+  message?: string;
+  url?: string;
+  version?: string;
+  buildNumber?: string;
+  commitHash?: string;
+  healthCheck?: string;
+  deploymentLogs?: string;
 }
 
 export interface WorkflowData {
@@ -159,7 +174,7 @@ export function WorkflowVisualization({
     // Allow clicking on any stage that has content or is completed
     if (clickedStage && (clickedStage.status === 'completed' || clickedStage.content || 
         clickedStage.stories || clickedStage.designContent || 
-        clickedStage.codeFiles || clickedStage.testFiles)) {
+        clickedStage.codeFiles || clickedStage.testFiles || clickedStage.deploymentInfo)) {
       
       if (selectedStage === stageId) {
         // Deselect if clicking the same stage
@@ -456,6 +471,12 @@ function EnhancedStageDetails({ stage, onClose }: EnhancedStageDetailsProps) {
       case 'testing':
         return stage.testFiles && stage.testFiles.length > 0 ? (
           <TestContent testFiles={stage.testFiles} />
+        ) : (
+          <DefaultContent stage={stage} />
+        );
+      case 'deployment':
+        return stage.deploymentInfo ? (
+          <DeploymentContent deploymentInfo={stage.deploymentInfo} />
         ) : (
           <DefaultContent stage={stage} />
         );
@@ -781,6 +802,52 @@ function TestContent({ testFiles }: { testFiles: CodeFile[] }) {
               </div>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Deployment Content Component - No duplicate header
+function DeploymentContent({ deploymentInfo }: { deploymentInfo: DeploymentInfo }) {
+  return (
+    <div className="overflow-y-auto p-6">
+      <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-6 border border-slate-200 shadow-sm">
+        <div className="prose prose-sm max-w-none">
+          <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+            Deployment Details
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+              <h5 className="font-medium text-slate-900 text-sm mb-2">Application</h5>
+              <p className="text-slate-600 text-sm">{deploymentInfo.applicationName}</p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+              <h5 className="font-medium text-slate-900 text-sm mb-2">Environment</h5>
+              <p className="text-slate-600 text-sm">{deploymentInfo.environment}</p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+              <h5 className="font-medium text-slate-900 text-sm mb-2">Status</h5>
+              <p className={cn(
+                "text-sm font-medium",
+                deploymentInfo.status === 'success' ? "text-emerald-700" :
+                deploymentInfo.status === 'failed' ? "text-red-700" : "text-slate-700"
+              )}>
+                {deploymentInfo.status}
+              </p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+              <h5 className="font-medium text-slate-900 text-sm mb-2">Timestamp</h5>
+              <p className="text-slate-600 text-sm">{deploymentInfo.timestamp.toLocaleString()}</p>
+            </div>
+            {deploymentInfo.message && (
+              <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                <h5 className="font-medium text-slate-900 text-sm mb-2">Message</h5>
+                <p className="text-slate-600 text-sm">{deploymentInfo.message}</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
