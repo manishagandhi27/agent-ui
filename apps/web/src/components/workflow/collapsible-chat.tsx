@@ -8,9 +8,10 @@ interface CollapsibleChatProps {
   isOpen: boolean;
   onToggle: () => void;
   className?: string;
+  onNewEpicDetected?: (epicId: string) => void; // Callback to reset workflow with Epic ID
 }
 
-export function CollapsibleChat({ isOpen, onToggle, className }: CollapsibleChatProps) {
+export function CollapsibleChat({ isOpen, onToggle, className, onNewEpicDetected }: CollapsibleChatProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleExpand = () => {
@@ -111,7 +112,7 @@ export function CollapsibleChat({ isOpen, onToggle, className }: CollapsibleChat
                 exit={{ opacity: 0 }}
                 className="flex-1 min-h-0"
               >
-                <SidePanelChat />
+                <SidePanelChat onNewEpicDetected={onNewEpicDetected} />
               </motion.div>
             </AnimatePresence>
           </motion.div>

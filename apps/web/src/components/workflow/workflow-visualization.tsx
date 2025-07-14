@@ -449,38 +449,69 @@ function EnhancedStageDetails({ stage, onClose }: EnhancedStageDetailsProps) {
   const statusBadge = getStatusBadge(stage.status);
 
   const renderStageContent = () => {
+    console.log(`=== RENDERING STAGE CONTENT FOR: ${stage.id} ===`);
+    console.log('Stage data:', {
+      id: stage.id,
+      status: stage.status,
+      hasStories: !!stage.stories,
+      hasDesignContent: !!stage.designContent,
+      hasCodeFiles: !!stage.codeFiles,
+      hasTestFiles: !!stage.testFiles,
+      hasDeploymentInfo: !!stage.deploymentInfo,
+      storiesCount: stage.stories?.length || 0,
+      codeFilesCount: stage.codeFiles?.length || 0,
+      testFilesCount: stage.testFiles?.length || 0
+    });
+
     switch (stage.id) {
       case 'story_generation':
-        return stage.stories && stage.stories.length > 0 ? (
-          <StoriesContent stories={stage.stories} />
-        ) : (
-          <DefaultContent stage={stage} />
-        );
+        if (stage.stories && stage.stories.length > 0) {
+          console.log(`✅ Rendering StoriesContent with ${stage.stories.length} stories`);
+          return <StoriesContent stories={stage.stories} />;
+        } else {
+          console.log(`⚠️ No stories found, rendering DefaultContent`);
+          return <DefaultContent stage={stage} />;
+        }
       case 'design_generation':
-        return stage.designContent ? (
-          <DesignContent content={stage.designContent} />
-        ) : (
-          <DefaultContent stage={stage} />
-        );
+        if (stage.designContent) {
+          console.log(`✅ Rendering DesignContent with content length: ${stage.designContent.length}`);
+          return <DesignContent content={stage.designContent} />;
+        } else {
+          console.log(`⚠️ No design content found, rendering DefaultContent`);
+          return <DefaultContent stage={stage} />;
+        }
       case 'code_generation':
-        return stage.codeFiles && stage.codeFiles.length > 0 ? (
-          <CodeContent files={stage.codeFiles} />
-        ) : (
-          <DefaultContent stage={stage} />
-        );
+        if (stage.codeFiles && stage.codeFiles.length > 0) {
+          console.log(`✅ Rendering CodeContent with ${stage.codeFiles.length} files`);
+          return <CodeContent files={stage.codeFiles} />;
+        } else {
+          console.log(`⚠️ No code files found, rendering DefaultContent`);
+          return <DefaultContent stage={stage} />;
+        }
       case 'testing':
-        return stage.testFiles && stage.testFiles.length > 0 ? (
-          <TestContent testFiles={stage.testFiles} />
-        ) : (
-          <DefaultContent stage={stage} />
-        );
+        if (stage.testFiles && stage.testFiles.length > 0) {
+          console.log(`✅ Rendering TestContent with ${stage.testFiles.length} test files`);
+          return <TestContent testFiles={stage.testFiles} />;
+        } else {
+          console.log(`⚠️ No test files found, rendering DefaultContent`);
+          return <DefaultContent stage={stage} />;
+        }
       case 'deployment':
-        return stage.deploymentInfo ? (
-          <DeploymentContent deploymentInfo={stage.deploymentInfo} />
-        ) : (
-          <DefaultContent stage={stage} />
-        );
+        if (stage.deploymentInfo) {
+          console.log(`✅ Rendering DeploymentContent with deployment info:`, {
+            applicationName: stage.deploymentInfo.applicationName,
+            environment: stage.deploymentInfo.environment,
+            status: stage.deploymentInfo.status,
+            hasUrl: !!stage.deploymentInfo.url,
+            hasLogs: !!stage.deploymentInfo.deploymentLogs
+          });
+          return <DeploymentContent deploymentInfo={stage.deploymentInfo} />;
+        } else {
+          console.log(`⚠️ No deployment info found, rendering DefaultContent`);
+          return <DefaultContent stage={stage} />;
+        }
       default:
+        console.log(`⚠️ Unknown stage "${stage.id}", rendering DefaultContent`);
         return <DefaultContent stage={stage} />;
     }
   };

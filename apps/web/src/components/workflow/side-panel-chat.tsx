@@ -18,13 +18,36 @@ import {
 
 interface SidePanelChatProps {
   className?: string;
+  onNewEpicDetected?: (epicId: string) => void; // Callback to reset workflow with Epic ID
 }
 
-export function SidePanelChat({ className }: SidePanelChatProps) {
+// Utility function to detect Epic/Issue IDs
+const detectEpicIssueId = (text: string): string | null => {
+  // Common patterns for Epic/Issue IDs
+  const patterns = [
+    /(?:epic|issue|story|task)\s*[#:]?\s*([A-Z]+-\d+)/i, // JIRA: EPIC-123, ISSUE-456
+    /(?:epic|issue|story|task)\s*[#:]?\s*([A-Z]{2,}-\d+)/i, // Custom: APEX-123, PROJ-456
+    /([A-Z]+-\d+)/, // Any uppercase letters followed by dash and numbers
+    /([A-Z]{2,}-\d+)/, // At least 2 uppercase letters followed by dash and numbers
+  ];
+  
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) {
+      return match[1];
+    }
+  }
+  
+  return null;
+};
+
+export function SidePanelChat({ className, onNewEpicDetected }: SidePanelChatProps) {
   const [input, setInput] = useState("");
   const [latestProgressEvent, setLatestProgressEvent] = useState<any | null>(null);
   const [aiResponseEvents, setAiResponseEvents] = useState<any[]>([]);
   const [lastAiMessageId, setLastAiMessageId] = useState<string | null>(null);
+  const [lastEpicId, setLastEpicId] = useState<string | null>(null);
+  const [showEpicResetNotification, setShowEpicResetNotification] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const stream = useStreamContext();
@@ -37,44 +60,49 @@ export function SidePanelChat({ className }: SidePanelChatProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Track UI events (progress and ai_response)
+  // Track UI events (progress and ai_response) with bulletproof logic
   useEffect(() => {
-    console.log("SidePanelChat: UI events changed:", uiEvents);
+    console.log("=== SIDE PANEL CHAT: UI EVENTS PROCESSING START ===");
+    console.log("Total UI events:", uiEvents.length);
+    console.log("Current AI response events count:", aiResponseEvents.length);
     
     const newProgressEvents = uiEvents.filter((ui) => ui.name === "progress");
     const newAiResponseEvents = uiEvents.filter((ui) => ui.name === "ai_response");
     
-    console.log("SidePanelChat: Filtered UI events:", {
+    console.log("Filtered events:", {
       progressEvents: newProgressEvents.length,
       aiResponseEvents: newAiResponseEvents.length
     });
     
-    // Process progress events
+    // Process progress events with error handling
     if (newProgressEvents.length > 0) {
       const latestProgress = newProgressEvents[newProgressEvents.length - 1];
-      console.log("SidePanelChat: Setting latest progress event:", latestProgress);
+      console.log("Setting latest progress event:", {
+        id: latestProgress.id,
+        agent: latestProgress.props?.agent_name,
+        content: typeof latestProgress.props?.content === 'string' ? latestProgress.props.content.substring(0, 50) + '...' : latestProgress.props?.content,
+        progress: latestProgress.props?.progress
+      });
       setLatestProgressEvent(latestProgress);
     }
     
-    // Process AI response events
-    if (newAiResponseEvents.length > 0) {
-      console.log("SidePanelChat: Processing AI response events:", newAiResponseEvents);
-      setAiResponseEvents(prev => {
-        console.log("SidePanelChat: Previous AI response events:", prev);
-        const newEvents = [...prev];
-        newAiResponseEvents.forEach(event => {
+    // Bulletproof AI response event processing
+    setAiResponseEvents(prev => {
+      const existingIds = new Set(prev.map(e => e.id || `${e.props?.content}-${e.props?.agent_name}`));
+      const newEvents = [...prev];
+      uiEvents
+        .filter(e => e.name === 'ai_response')
+        .forEach(event => {
           const eventId = event.id || `${event.props?.content}-${event.props?.agent_name}`;
-          if (!newEvents.find(e => (e.id || `${e.props?.content}-${e.props?.agent_name}`) === eventId)) {
+          if (!existingIds.has(eventId)) {
             newEvents.push(event);
-            console.log("SidePanelChat: Added new AI response event:", event);
-          } else {
-            console.log("SidePanelChat: Skipped duplicate AI response event:", event);
+            existingIds.add(eventId);
           }
         });
-        console.log("SidePanelChat: Updated AI response events:", newEvents);
-        return newEvents;
-      });
-    }
+      return newEvents;
+    });
+    
+    console.log("=== SIDE PANEL CHAT: UI EVENTS PROCESSING COMPLETE ===");
   }, [uiEvents]);
 
   // Remove progress indicator when an AI message arrives
@@ -91,6 +119,29 @@ export function SidePanelChat({ className }: SidePanelChatProps) {
     if (!input.trim() || isLoading) return;
     setLatestProgressEvent(null);
     setLastAiMessageId(null);
+
+    // Detect Epic/Issue ID in the input
+    const detectedEpicId = detectEpicIssueId(input);
+    
+    if (detectedEpicId && detectedEpicId !== lastEpicId) {
+      console.log('New Epic/Issue ID detected:', detectedEpicId, 'Previous:', lastEpicId);
+      
+      // Reset workflow for new Epic
+      if (onNewEpicDetected) {
+        onNewEpicDetected(detectedEpicId);
+      }
+      
+      // Update last Epic ID
+      setLastEpicId(detectedEpicId);
+      
+      // Clear previous progress and AI response events for clean slate
+      setLatestProgressEvent(null);
+      setAiResponseEvents([]);
+      
+      // Show notification
+      setShowEpicResetNotification(true);
+      setTimeout(() => setShowEpicResetNotification(false), 3000); // Hide after 3 seconds
+    }
 
     const newHumanMessage: Message = {
       id: uuidv4(),
@@ -140,6 +191,21 @@ export function SidePanelChat({ className }: SidePanelChatProps) {
 
   return (
     <div className={cn("flex flex-col h-full bg-white", className)}>
+      {/* Epic Reset Notification */}
+      {showEpicResetNotification && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="bg-gradient-to-r from-emerald-50 to-green-50 border-b border-emerald-200 p-3 flex items-center gap-2"
+        >
+          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+          <span className="text-sm font-medium text-emerald-800">
+            New Epic detected! Workflow pipeline reset for fresh start.
+          </span>
+        </motion.div>
+      )}
+      
       {/* Messages Area - Reduced height to prevent hiding reset button */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style={{ maxHeight: 'calc(100vh - 200px)' }}>
         {filteredMessages.map((message, index) =>
@@ -159,13 +225,24 @@ export function SidePanelChat({ className }: SidePanelChatProps) {
             ),
           )}
         
-        {/* Render AI response bubbles from UI events */}
+        {/* Render AI response bubbles from UI events with bulletproof logic */}
         {aiResponseEvents.map((event, index) => {
-          console.log("SidePanelChat: Rendering AI response bubble:", event);
+          console.log(`Rendering AI response bubble ${index + 1}/${aiResponseEvents.length}:`, {
+            id: event.id,
+            agent: event.props?.agent_name,
+            content: typeof event.props?.content === 'string' ? event.props.content.substring(0, 30) + '...' : 'No content',
+            progress: event.props?.progress
+          });
+          
+          if (!event.props?.content) {
+            console.warn(`⚠️ AI response event missing content:`, event);
+            return null;
+          }
+          
           return (
             <AiResponseBubble 
               key={event.id || `ai-response-${index}`} 
-              content={event.props?.content} 
+              content={event.props.content} 
             />
           );
         })}
@@ -180,11 +257,12 @@ export function SidePanelChat({ className }: SidePanelChatProps) {
         )}
         
         {/* Debug info */}
-        {console.log("SidePanelChat: Rendering debug:", {
+        {console.log("=== SIDE PANEL CHAT RENDERING DEBUG ===", {
           aiResponseEventsCount: aiResponseEvents.length,
           latestProgressEvent: !!latestProgressEvent,
           progressAgentName: latestProgressEvent?.props?.agent_name,
-          shouldShowProgress: latestProgressEvent ? shouldShowProgressForAgent(latestProgressEvent.props?.agent_name) : false
+          shouldShowProgress: latestProgressEvent ? shouldShowProgressForAgent(latestProgressEvent.props?.agent_name) : false,
+          messagesCount: filteredMessages.length
         })}
         
         {/* Auto-scroll anchor */}

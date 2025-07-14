@@ -48,7 +48,7 @@ function SDLCLayout({
   isWorkflowPaused, 
   setIsWorkflowPaused 
 }: SDLCLayoutProps) {
-  const { workflowData, resetWorkflow, runDemo } = useWorkflowManager();
+  const { workflowData, resetWorkflow, runDemo, resetForNewEpic } = useWorkflowManager();
   const stream = useStreamContext();
 
   // Debug: Log workflow data
@@ -241,6 +241,93 @@ function SDLCLayout({
     });
   };
 
+  // Comprehensive test function to validate AI response bubbles and content windows
+  const runComprehensiveTest = () => {
+    console.log('=== COMPREHENSIVE TEST START ===');
+    
+    // Reset workflow first
+    resetWorkflow();
+    
+    // Clear existing events
+    stream.values.ui = [];
+    
+    // Test sequence: deployment stage only (for quick testing)
+    const testEvents = [
+      // Progress event to activate deployment stage
+      {
+        id: 'test-deployment-progress',
+        type: 'ui',
+        name: 'progress',
+        props: {
+          agent_name: 'deployment_specialist',
+          content: 'Testing deployment stage activation...',
+          progress: 50
+        },
+        metadata: {}
+      },
+      // Content ready event with deployment info
+      {
+        id: 'test-deployment-content-ready',
+        type: 'ui',
+        name: 'content_ready',
+        props: {
+          agent_name: 'deployment_specialist',
+          content: 'Deployment content ready!',
+          progress: 100,
+          stage_data: {
+            deploymentInfo: {
+              applicationName: 'Test Application',
+              environment: 'staging',
+              url: 'https://test.example.com',
+              version: '1.0.0',
+              status: 'success',
+              timestamp: new Date(),
+              buildNumber: '99999',
+              commitHash: 'test123',
+              healthCheck: 'passed',
+              deploymentLogs: 'Test deployment completed successfully\nAll checks passed\nReady for testing'
+            }
+          }
+        },
+        metadata: {}
+      },
+      // AI response event (should come AFTER content_ready)
+      {
+        id: 'test-deployment-ai-response',
+        type: 'ui',
+        name: 'ai_response',
+        props: {
+          agent_name: 'deployment_specialist',
+          content: '✅ Deployment completed successfully! Application is live and ready.',
+          progress: 100
+        },
+        metadata: {}
+      }
+    ];
+
+    console.log('Test events to be emitted:', testEvents.map(e => ({
+      name: e.name,
+      agent: e.props?.agent_name,
+      progress: e.props?.progress,
+      hasContent: !!e.props?.content,
+      hasStageData: !!e.props?.stage_data
+    })));
+
+    // Emit events with delays
+    testEvents.forEach((event, index) => {
+      setTimeout(() => {
+        stream.values.ui = [...(stream.values.ui || []), event as any];
+        console.log(`✅ Emitted test event ${index + 1}/${testEvents.length}:`, {
+          name: event.name,
+          agent: event.props?.agent_name,
+          progress: event.props?.progress
+        });
+      }, index * 2000); // 2 second delays
+    });
+    
+    console.log('=== COMPREHENSIVE TEST SETUP COMPLETE ===');
+  };
+
   const toggleWorkflowPause = () => {
     setIsWorkflowPaused(!isWorkflowPaused);
   };
@@ -298,6 +385,13 @@ function SDLCLayout({
               Deployment Demo
             </Button>
             <Button
+              onClick={runComprehensiveTest}
+              className="bg-red-600 hover:bg-red-700 text-white border-0 shadow-sm hover:shadow-md transition-all duration-200 px-4 py-2 rounded-lg font-medium text-sm"
+            >
+              <PlayIcon className="w-4 h-4 mr-2" />
+              Comprehensive Test
+            </Button>
+            <Button
               onClick={() => setIsHistoryOpen(true)}
               className="bg-slate-100 hover:bg-slate-200 text-slate-700 border-0 shadow-sm hover:shadow-md transition-all duration-200 px-3 py-2 rounded-lg font-medium text-sm"
               title="History"
@@ -332,6 +426,7 @@ function SDLCLayout({
         <CollapsibleChat
           isOpen={isChatOpen}
           onToggle={() => setIsChatOpen(!isChatOpen)}
+          onNewEpicDetected={resetForNewEpic}
         />
       </div>
 
